@@ -1,0 +1,50 @@
+.\" $FreeBSD$
+.\" $Id: aps.1,v 1.1.1.1 2007/02/28 00:39:25 peadar Exp $
+.\"
+.Dd Nov 1, 2002
+.Dt APS 1
+.Os
+.Sh NAME
+.Nm aps
+.Nd A Port Scanner. Find exposed network services on a host
+.Sh SYNOPSIS
+.Nm
+.Op Fl s
+.Op Fl v
+.Op Fl f Ar first port
+.Op Fl l Ar last port
+.Op Fl p Ar parallel-connections
+.Ar host
+.Sh DESCRIPTION
+Scans the specified
+.Ar host
+for running TCP services. Note that a host with multiple addresses
+will have each address checked independently.
+.Pp
+Options are as follows:
+.Bl -tag -width Fl
+.It Fl f Ar first-port
+First port number to scan on each interface
+.It Fl l Ar last-port
+Last port to scan on each interface
+.It Fl m Ar parallel-connections
+Specify the maximum number of connections to attempt simultaneously.
+The default is 30.
+.It Fl v
+Set verbosity level. Multiple uses of this option increases the level
+of verbosity.
+.It Fl s
+Only attempt to connect to ports that are found in the
+.Xr services 5
+database
+.El
+.Sh SEE ALSO
+.Xr getaddrinfo 3
+.Xr getservent 3
+.Xr tcp 4
+.Xr ip 4
+.Xr ip6 4
+.Sh BUGS
+Probably
+.Sh AUTHORS
+Peter Edwards <pmedwards@eircom.net>
