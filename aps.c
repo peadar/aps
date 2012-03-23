@@ -47,38 +47,38 @@ static const char *progName;
 static void
 usage()
 {
-	fprintf(stderr, "usage: %s "
-	    "[-f <first port>] "
-	    "[-l <last port>] "
-	    "[-m <max open sockets>] "
-	    "[-s] "
-	    "[-v] "
-	    "<host>\n", progName);
-	exit(-1);
+    fprintf(stderr, "usage: %s "
+        "[-f <first port>] "
+        "[-l <last port>] "
+        "[-m <max open sockets>] "
+        "[-s] "
+        "[-v] "
+        "<host>\n", progName);
+    exit(-1);
 }
 
 static int
 intOption(int min, int max)
 {
-	int rc;
-	char *p = optarg;
-	rc = strtol(p, &p, 10);
-	if (!p || p[0] != '\0' || rc < min || rc > max) {
-		usage();
-	}
-	return rc;
+    int rc;
+    char *p = optarg;
+    rc = strtol(p, &p, 10);
+    if (!p || p[0] != '\0' || rc < min || rc > max) {
+        usage();
+    }
+    return rc;
 }
 
 static void
 humanReadable(void *udata,
-	    const char *host,
-	    const char *service,
-	    const char *numericService,
-	    const char *protocol, int error)
+        const char *host,
+        const char *service,
+        const char *numericService,
+        const char *protocol, int error)
 {
-	if (error == 0)
-		printf("host=%s, port=%s(%s), proto=%s\n",
-		    host, numericService, service, protocol);
+    if (error == 0)
+        printf("host=%s, port=%s(%s), proto=%s\n",
+            host, numericService, service, protocol);
         else if (verbose) {
             const char *p = strerror(error);
             fprintf(stderr, "ERR: %s: host=%s, port=%s(%s), proto=%s\n",
@@ -89,50 +89,50 @@ humanReadable(void *udata,
 int
 main(int argc, char *argv[])
 {
-	int c;
-	int firstPort = 1;
-	int lastPort = 65535;
-	int servicesOnly = 0;
-	int maxSockets = 30;
-	struct PortScanner *ps;
+    int c;
+    int firstPort = 1;
+    int lastPort = 65535;
+    int servicesOnly = 0;
+    int maxSockets = 30;
+    struct PortScanner *ps;
 
-	progName = basename(argv[0]);
-	while ((c = getopt(argc, argv, "f:l:m:sv")) != -1) {
-		switch (c) {
-		case 'v':
-			verbose++; break;
-			break;
-		case 'f':
-			firstPort = intOption(1, 65535);
-			break;
-		case 'l':
-			lastPort = intOption(1, 65535);
-			break;
-		case 's':
-			servicesOnly = 1;
-			break;
-		case 'm':
-			maxSockets = intOption(1, 10000);
-			break;
-		}
-	}
-	argc -= optind;
-	argv += optind;
-	if (argc != 1)
-		usage();
-	ps = newPortScanner(
-			argv[0],
-			firstPort,
-			lastPort,
-			verbose,
-			servicesOnly,
-			maxSockets,
-			humanReadable,
-			0);
-	if (ps) {
-	    while (pollPortScanner(ps))
-		    ;
-	    deletePortScanner(ps);
-	}
-	return 0;
+    progName = basename(argv[0]);
+    while ((c = getopt(argc, argv, "f:l:m:sv")) != -1) {
+        switch (c) {
+        case 'v':
+            verbose++; break;
+            break;
+        case 'f':
+            firstPort = intOption(1, 65535);
+            break;
+        case 'l':
+            lastPort = intOption(1, 65535);
+            break;
+        case 's':
+            servicesOnly = 1;
+            break;
+        case 'm':
+            maxSockets = intOption(1, 10000);
+            break;
+        }
+    }
+    argc -= optind;
+    argv += optind;
+    if (argc != 1)
+        usage();
+    ps = newPortScanner(
+            argv[0],
+            firstPort,
+            lastPort,
+            verbose,
+            servicesOnly,
+            maxSockets,
+            humanReadable,
+            0);
+    if (ps) {
+        while (pollPortScanner(ps))
+            ;
+        deletePortScanner(ps);
+    }
+    return 0;
 }
