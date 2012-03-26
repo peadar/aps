@@ -14,16 +14,26 @@
 #include <limits.h>
 #include "pscan.h"
 
-#ifndef LONG_BIT
-#define LONG_BIT (CHAR_BIT * sizeof (long))
-#endif
+typedef unsigned long BitsetChunk;
+
+#define BITSET_CHUNK_BITS (CHAR_BIT * sizeof (BitsetChunk))
+#define BITSET_CHUNK_COUNT(bits)  (((bits) + BITSET_CHUNK_BITS - 1) / BITSET_CHUNK_BITS)
 
 #ifndef IPPORT_MAX
 #define IPPORT_MAX 65535
 #endif
 
 static int havePorts = 0;
-static unsigned long servicePorts[IPPORT_MAX / LONG_BIT + 1];
+static BitsetChunk servicePorts[BITSET_CHUNK_COUNT(IPPORT_MAX + 1)];
+
+
+static inline void bitSet(BitsetChunk *set, size_t bitno, int value) {
+    set[bitno/BITSET_CHUNK_BITS] |= (BitsetChunk)1 << bitno % BITSET_CHUNK_BITS;
+}
+
+static inline int bitGet(BitsetChunk *set, size_t bitno) {
+    return (set[bitno/BITSET_CHUNK_BITS] & (BitsetChunk)1 << bitno % BITSET_CHUNK_BITS) != 0;
+}
 
 struct PortScanner {
     in_port_t firstPort;
@@ -109,8 +119,7 @@ newPortScanner(const char *host,
         havePorts = 1;
         for (setservent(1); (ent = getservent()); ) {
             in_port_t port = ntohs(ent->s_port);
-            fprintf(stderr, "service %s on port %d\n", ent->s_name, port);
-            servicePorts[port/LONG_BIT] |= (unsigned long)1 << port % LONG_BIT;
+            bitSet(servicePorts, port, 1);
         }
     }
 
@@ -201,8 +210,7 @@ nextPort(struct PortScanner *ps)
         ps->currentPort++;
         if (ps->currentPort > ps->lastPort)
             nextAddress(ps);
-    } while (ps->currAddr && ps->servicesOnly && (servicePorts[ps->currentPort / LONG_BIT]
-        & (unsigned long)1 << ps->currentPort % LONG_BIT) == 0);
+    } while (ps->currAddr && ps->servicesOnly && bitGet(servicePorts, ps->currentPort) == 0);
 }
 
 static void
