@@ -23,7 +23,7 @@
 #endif
 
 static int havePorts = 0;
-static unsigned long servicePorts[IPPORT_MAX / LONG_BIT];
+static unsigned long servicePorts[IPPORT_MAX / LONG_BIT + 1];
 
 struct PortScanner {
     in_port_t firstPort;
@@ -109,7 +109,8 @@ newPortScanner(const char *host,
         havePorts = 1;
         for (setservent(1); (ent = getservent()); ) {
             in_port_t port = ntohs(ent->s_port);
-            servicePorts[port/LONG_BIT] |= 1 << port % LONG_BIT;
+            fprintf(stderr, "service %s on port %d\n", ent->s_name, port);
+            servicePorts[port/LONG_BIT] |= (unsigned long)1 << port % LONG_BIT;
         }
     }
 
@@ -190,7 +191,7 @@ nextAddress(struct PortScanner *ps)
 {
     ps->currAddr = ps->currAddr->ai_next;
     if (ps->currAddr)
-        ps->currentPort = ps->firstPort - 1;
+        ps->currentPort = ps->firstPort;
 }
 
 static void
@@ -198,10 +199,10 @@ nextPort(struct PortScanner *ps)
 {
     do {
         ps->currentPort++;
-    } while (ps->servicesOnly && (servicePorts[ps->currentPort / LONG_BIT]
-        & 1 << ps->currentPort % LONG_BIT) == 0);
-    if (ps->currentPort > ps->lastPort)
-        nextAddress(ps);
+        if (ps->currentPort > ps->lastPort)
+            nextAddress(ps);
+    } while (ps->currAddr && ps->servicesOnly && (servicePorts[ps->currentPort / LONG_BIT]
+        & (unsigned long)1 << ps->currentPort % LONG_BIT) == 0);
 }
 
 static void
