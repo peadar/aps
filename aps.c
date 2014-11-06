@@ -53,6 +53,7 @@ usage()
         "[-m <max open sockets>] "
         "[-s] "
         "[-v] "
+        "[-S] "
         "<host>\n", progName);
     exit(-1);
 }
@@ -94,6 +95,7 @@ main(int argc, char *argv[])
     int lastPort = 65535;
     int servicesOnly = 0;
     int maxSockets = 30;
+    uint32_t ipv6Scope = 0;
     struct PortScanner *ps;
 
     progName = basename(argv[0]);
@@ -114,6 +116,9 @@ main(int argc, char *argv[])
         case 'm':
             maxSockets = intOption(1, 10000);
             break;
+        case 'S':
+            ipv6Scope = strtoul(optarg, 0, 0);
+            break;
         }
     }
     argc -= optind;
@@ -127,6 +132,7 @@ main(int argc, char *argv[])
             verbose,
             servicesOnly,
             maxSockets,
+            ipv6Scope,
             humanReadable,
             0);
     if (ps) {

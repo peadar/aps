@@ -24,6 +24,7 @@ typedef unsigned long BitsetChunk;
 #endif
 
 static int havePorts = 0;
+
 static BitsetChunk servicePorts[BITSET_CHUNK_COUNT(IPPORT_MAX + 1)];
 
 
@@ -47,6 +48,7 @@ struct PortScanner {
     struct pollfd *sockets;
     int socketCount;
     int maxSockets;
+    int ipv6Scope;
     struct addrinfo *hostInformation;
     FinishFunc finishFunc;
     void *udata;
@@ -109,6 +111,7 @@ newPortScanner(const char *host,
         int verbose,
         int servicesOnly,
         int maxSockets,
+        int ipv6Scope,
         FinishFunc func,
         void *udata)
 {
@@ -124,9 +127,9 @@ newPortScanner(const char *host,
     }
 
     ps = malloc(sizeof *ps);
-        ps->hostInformation = 0;
-        if (addrsFor(host, &ps->hostInformation) == 0)
-            return 0;
+    ps->hostInformation = 0;
+    if (addrsFor(host, &ps->hostInformation) == 0)
+        return 0;
     ps->firstPort = firstPort;
     ps->lastPort = lastPort;
     ps->verbose = verbose;
@@ -139,6 +142,7 @@ newPortScanner(const char *host,
     ps->currentPort = ps->firstPort;
     ps->finishFunc = func;
     ps->udata = udata;
+    ps->ipv6Scope = ipv6Scope;
     return ps;
 }
 
@@ -150,7 +154,7 @@ int
 pollPortScanner(struct PortScanner *ps)
 {
     int i, rc, sockerror;
-        socklen_t errlen;
+    socklen_t errlen;
     struct pollfd *pfds = ps->sockets;
 
     launchConnects(ps);
@@ -159,17 +163,16 @@ pollPortScanner(struct PortScanner *ps)
     rc = poll(ps->sockets, ps->socketCount, -1);
     if (rc == -1) {
         if (errno != EINTR) {
-        printf("poll failed: %s\n", strerror(errno));
-        return 0;
+            printf("poll failed: %s\n", strerror(errno));
+            return 0;
         } else {
-        return 1;
+            return 1;
         }
     }
     for (i = ps->socketCount; i--;) {
         if (pfds[i].revents & (POLLOUT|POLLERR)) {
             errlen = sizeof sockerror;
-            if (getsockopt(pfds[i].fd, SOL_SOCKET,
-                SO_ERROR, &sockerror, &errlen) != 0)
+            if (getsockopt(pfds[i].fd, SOL_SOCKET, SO_ERROR, &sockerror, &errlen) != 0)
                 err(-1, "getsockopt(SO_ERROR)");
             finish(ps, pfds[i].fd, ps->connections[i], sockerror);
             --ps->socketCount;
@@ -262,6 +265,8 @@ openSocket(struct PortScanner *ps)
     switch (ps->currAddr->ai_family) {
     case PF_INET6:
         ((struct sockaddr_in6 *)ci->ci_sa)->sin6_port = netPort;
+        ((struct sockaddr_in6 *)ci->ci_sa)->sin6_scope_id = ps->ipv6Scope;
+
         break;
 
     case PF_INET:
